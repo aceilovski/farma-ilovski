@@ -18,10 +18,15 @@ const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
 let currentUserEmail = ""; let currentRole = "user"; let myChart; let selectedCowId = null;
 
 // ==========================================
-// 2. UI HELPERS
+// 2. UI HELPERS (ПОПРАВЕНИ ЗА ЛОАДЕРОТ)
 // ==========================================
-function showLoader(t = "Вчитување...") { document.getElementById('loaderText').innerText = t; document.getElementById('globalLoader').classList.remove('hidden'); }
-function hideLoader() { document.getElementById('globalLoader').classList.add('hidden'); }
+function showLoader(t = "Вчитување...") { 
+    document.getElementById('loaderText').innerText = t; 
+    document.getElementById('globalLoader').style.display = 'flex'; 
+}
+function hideLoader() { 
+    document.getElementById('globalLoader').style.display = 'none'; 
+}
 function showToast(t) { 
   let b = document.getElementById('toastNotification'); b.innerText = t; 
   b.classList.remove('opacity-0', 'translate-y-4'); b.classList.add('opacity-100', 'translate-y-0');
@@ -200,8 +205,29 @@ function izvestaj() {
   });
 }
 
-function generirajExcel() { /* Останува иста */ }
-function generirajPDF() { /* Останува иста */ }
+function generirajExcel() {
+    if(reportTotalLiters === 0) return showAlert("Прво кликнете 'Генерирај'.");
+    showLoader("Експортирање...");
+    db.collection("milk").where("period", "==", reportMonth).orderBy("timestamp").get().then(snap => {
+        hideLoader(); let csv = "ДАТУМ;ВРЕМЕ;ПРЕДАДЕНИ ЛИТРИ\n";
+        snap.forEach(doc => { let d = doc.data().timestamp.toDate(); csv += `${("0"+d.getDate()).slice(-2)}.${("0"+(d.getMonth()+1)).slice(-2)}.${d.getFullYear()};${("0"+d.getHours()).slice(-2)}:${("0"+d.getMinutes()).slice(-2)};${doc.data().liters.toFixed(2)}\n`; });
+        let bruto = reportTotalLiters * reportMilkPrice; let danok = (bruto * 0.20) * (reportTaxPercent/100);
+        csv += `\nВКУПНО ЛИТРИ:;${reportTotalLiters.toFixed(2)}\nБРУТО (ден):;${bruto.toFixed(2)}\nДАНОК (ден):;-${danok.toFixed(2)}\nЗА ИСПЛАТА (ден):;${(bruto-danok).toFixed(2)}\n`;
+        let blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' }); let a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `Izvestaj_${reportMonth}.csv`; a.click();
+    });
+}
+
+function generirajPDF() {
+    if(reportTotalLiters === 0) return showAlert("Прво кликнете 'Генерирај'.");
+    showLoader("Генерирање PDF...");
+    const { jsPDF } = window.jspdf; const doc = new jsPDF();
+    doc.setFontSize(22); doc.setTextColor(8, 145, 178); doc.text("FAKTURA ZA OTKUP NA MLEKO", 14, 20);
+    doc.setFontSize(11); doc.setTextColor(100, 100, 100); doc.text("Farma Ilovski - s. Zilce, Tetovo", 14, 28); doc.text("Period: " + reportMonth, 14, 34); doc.text("Datum na izdavanje: " + new Date().toLocaleDateString('mk-MK'), 14, 40);
+    let bruto = reportTotalLiters * reportMilkPrice; let danok = (bruto * 0.20) * (reportTaxPercent/100); let neto = bruto - danok;
+    doc.autoTable({ startY: 50, theme: 'grid', headStyles: { fillColor: [8, 145, 178] }, head: [['Opis', 'Kolicina (Litri)', 'Cena (den)', 'Danocna stapka', 'Vkupno (den)']], body: [['Surovo kravjo mleko', reportTotalLiters.toFixed(2), reportMilkPrice.toFixed(2), reportTaxPercent + "%", bruto.toFixed(2)]], });
+    let finalY = doc.lastAutoTable.finalY + 15; doc.setFontSize(12); doc.setTextColor(0, 0, 0); doc.text("Bruto iznos: " + bruto.toFixed(2) + " den.", 120, finalY); doc.text("Personalen danok: - " + danok.toFixed(2) + " den.", 120, finalY + 8); doc.setFontSize(14); doc.setTextColor(16, 185, 129); doc.text("ZA ISPLATA: " + neto.toFixed(2) + " den.", 120, finalY + 18);
+    hideLoader(); doc.save(`Faktura_${reportMonth}.pdf`);
+}
 
 function drawChart() {
   db.collection("milk").get().then(snap => {
@@ -233,5 +259,24 @@ function loadUsers() {
   });
 }
 
-function dodajNovKorisnik() { /* Останува иста */ }
-function switchUserRole(uid, currentRoleState) { let newRole = currentRoleState === 'admin' ? 'user' : 'admin'; showConfirm(`Промена на улога во ${newRole.toUpperCase()}?`, () => { db.collection("users").doc(uid).update({ role: newRole }).then(() => { showToast("Улогата е ажурирана."); loadUsers(); }); }); }
+function dodajNovKorisnik() {
+    let email = document.getElementById('novKorisnikEmail').value.trim(); 
+    let pass = document.getElementById('novKorisnikPass').value; 
+    let role = document.getElementById('novKorisnikUloga').value;
+    if(!email || pass.length < 6) return showAlert("Внесете валиден е-маил и лозинка од минимум 6 карактери!"); 
+    showLoader("Одобрување пристап...");
+    secondaryApp.auth().createUserWithEmailAndPassword(email, pass).then((userCredential) => { 
+        let noviUid = userCredential.user.uid; 
+        return db.collection("users").doc(noviUid).set({ email: email, role: role, lastActive: null }); 
+    }).then(() => { 
+        secondaryApp.auth().signOut(); hideLoader(); showToast("Пристапот е одобрен."); 
+        document.getElementById('novKorisnikEmail').value = ""; document.getElementById('novKorisnikPass').value = ""; loadUsers(); 
+    }).catch((error) => { hideLoader(); showAlert("Грешка: " + error.message); });
+}
+
+function switchUserRole(uid, currentRoleState) { 
+    let newRole = currentRoleState === 'admin' ? 'user' : 'admin'; 
+    showConfirm(`Промена на улога во ${newRole.toUpperCase()}?`, () => { 
+        db.collection("users").doc(uid).update({ role: newRole }).then(() => { showToast("Улогата е ажурирана."); loadUsers(); }); 
+    }); 
+}

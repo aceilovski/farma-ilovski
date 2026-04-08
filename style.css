@@ -1,23 +1,10 @@
-/* =========================================
-   ДОПОЛНИТЕЛНИ СТИЛОВИ (Tailwind + Glassmorphism)
-   ========================================= */
+/* Поправање на Safe Area за долната навигација */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 
-/* 1. Поправање на просторот за долната навигација на модерни телефони (iPhone/Android) */
-.pb-safe {
-    padding-bottom: env(safe-area-inset-bottom);
-}
+/* Хоризонтален скролбар */
+.custom-scrollbar::-webkit-scrollbar { height: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 
-/* 2. Убав, тенок и полупроѕирен хоризонтален скролбар (за филтерот кај кравите) */
-.custom-scrollbar::-webkit-scrollbar { 
-    height: 4px; 
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb { 
-    background: rgba(156, 163, 175, 0.5); 
-    border-radius: 10px; 
-}
-
-/* Скриј ја позадината на скролбарот за да изгледа почисто */
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-}
+/* МАГИЧНАТА ЛИНИЈА: Гарантира дека секогаш ќе ги крие елементите */
+.hidden { display: none !important; }
