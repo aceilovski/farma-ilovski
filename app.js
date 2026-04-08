@@ -76,25 +76,24 @@ auth.onAuthStateChanged((user) => {
         lastActive: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true }).catch(e => console.log(e));
 
-    // ПРОЗОРЕЦ 1
-    alert("ЧЕКОР 1: Најавен си со мејл " + user.email + "\nТвојот UID e: " + user.uid);
-
     db.collection("users").doc(user.uid).get()
       .then(doc => {
         if(doc.exists) {
-            // ПРОЗОРЕЦ 2
-            alert("ЧЕКОР 2: Документот е НАЈДЕН!\nПрочитана улога: " + doc.data().role);
-            currentRole = doc.data().role; 
+            // ДЕТЕКТИВ ЗА ПОЛИЊА:
+            let sitePninja = JSON.stringify(doc.data(), null, 2);
+            alert("Документот е најден! Еве што точно има внатре:\n\n" + sitePninja);
+            
+            if(doc.data().role) {
+                 currentRole = doc.data().role;
+            } else {
+                 currentRole = "user";
+            }
         } else {
-            // ПРОЗОРЕЦ 3
-            alert("ГРЕШКА: Firebase вели дека нема документ со име:\n" + user.uid);
             currentRole = "user";
         }
         applyUserRoleUI();
       })
       .catch(err => { 
-          // ПРОЗОРЕЦ 4
-          alert("БЛОКАДА ОД БАЗАТА:\n" + err.message);
           currentRole = "user"; 
           applyUserRoleUI(); 
       });
