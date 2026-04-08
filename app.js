@@ -1,3 +1,8 @@
+window.onerror = function(message, source, lineno, colno, error) {
+  console.error("Системска грешка: ", message, "на линија", lineno);
+  return true;
+};
+
 // ==========================================
 // 1. FIREBASE CONFIGURATION
 // ==========================================
@@ -9,11 +14,13 @@ const firebaseConfig = {
   messagingSenderId: "704057351677",
   appId: "1:704057351677:web:357444914122338e020d94"
 };
+
+// Прво иницијализација!
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(); 
 const db = firebase.firestore();
 
-// Ova sekundarna instanca služi samo za kreiranje korisnika bez da te odjavi
+// Секундарна инстанца за креирање корисници
 const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
 
 let currentUserEmail = ""; 
@@ -58,19 +65,19 @@ function populateCalendar() {
 }
 
 // ==========================================
-// 3. AUTHENTICATION (Sa popravljenim ulogama)
+// 3. AUTHENTICATION & ROLES
 // ==========================================
 auth.onAuthStateChanged((user) => {
   if (user) {
     currentUserEmail = user.email; 
     document.getElementById('displayUser').innerText = currentUserEmail.split('@')[0];
     
-    // Ažuriranje vremena za "Online" status
+    // 1. Ажурирај го времето (за онлајн статус)
     db.collection("users").doc(user.uid).set({
         lastActive: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true }).catch(err => console.error("Greška pri upisu aktivnosti:", err));
+    }, { merge: true }).catch(err => console.log("Следење на активност: ", err.message));
 
-    // Čitanje uloge
+    // 2. Вчитај ја улогата
     db.collection("users").doc(user.uid).get()
       .then(doc => {
         if(doc.exists && doc.data().role) {
@@ -81,7 +88,6 @@ auth.onAuthStateChanged((user) => {
         applyUserRoleUI();
       })
       .catch(err => { 
-          console.error("Greška pri čitanju uloge:", err);
           currentRole = "user"; 
           applyUserRoleUI(); 
       });
@@ -140,9 +146,7 @@ function login() {
     });
 }
 
-function odjaviSe() { 
-    auth.signOut().then(() => showToast("Одјавени сте!")); 
-}
+function odjaviSe() { auth.signOut().then(() => showToast("Одјавени сте!")); }
 
 // ==========================================
 // 4. NAVIGATION
@@ -158,7 +162,7 @@ function switchView(v) {
 }
 
 // ==========================================
-// 5. MILK LOGIC (mleko -> milk)
+// 5. MILK LOGIC 
 // ==========================================
 function presmetajOdMm() { let mm = parseFloat(document.getElementById('meracMm').value); document.getElementById('litri').value = (!mm || isNaN(mm)) ? "" : (Math.PI * Math.pow(44.75, 2) * (mm / 10) / 1000).toFixed(2); }
 
@@ -167,18 +171,8 @@ function zacuvajMleko() {
   showLoader("Зачувувам...");
   let godMes = document.getElementById('godinaSelect').value + "-" + ("0"+(new Date().getMonth()+1)).slice(-2);
   
-  db.collection("milk").add({ 
-      liters: l, 
-      userEmail: currentUserEmail, 
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
-      period: godMes 
-  })
-  .then(() => { 
-      hideLoader(); 
-      document.getElementById('litri').value = ""; 
-      document.getElementById('meracMm').value = ""; 
-      showToast("Зачувано!"); 
-  })
+  db.collection("milk").add({ liters: l, userEmail: currentUserEmail, timestamp: firebase.firestore.FieldValue.serverTimestamp(), period: godMes })
+  .then(() => { hideLoader(); document.getElementById('litri').value = ""; document.getElementById('meracMm').value = ""; showToast("Зачувано!"); })
   .catch(err => { hideLoader(); showAlert("Грешка: " + err.message); });
 }
 
@@ -192,14 +186,13 @@ function loadMilkLogs() {
       let btnDel = (currentRole === 'admin' || currentRole === 'superadmin') ? `<button onclick="deleteMilk('${id}')" class="btn btn-outline-danger px-2 py-1 border-0 rounded-circle"><i class="bi bi-trash"></i></button>` : "";
       h += `<tr><td><small class="text-muted">${datumStr}</small></td><td><b>${data.liters}L</b></td><td><small class="text-muted">${data.userEmail.split('@')[0]}</small></td><td class="text-end">${btnDel}</td></tr>`;
     });
-    document.getElementById('tabelaZapisi').innerHTML = h; 
-    document.getElementById('vkupnoOvojMesec').innerText = currentMonthTotal.toFixed(2);
+    document.getElementById('tabelaZapisi').innerHTML = h; document.getElementById('vkupnoOvojMesec').innerText = currentMonthTotal.toFixed(2);
   });
 }
 function deleteMilk(id) { showConfirm("Избриши запис?", () => db.collection("milk").doc(id).delete()); }
 
 // ==========================================
-// 6. HERD LOGIC (kravi -> cows)
+// 6. HERD LOGIC 
 // ==========================================
 let originalHerd = []; let activeCowFilter = "Site";
 
@@ -209,10 +202,8 @@ function osveziKravaUI() { let p = document.getElementById('kravaPol').value; le
 
 function loadCows() {
   db.collection("cows").orderBy("timestamp", "desc").onSnapshot(snap => {
-    originalHerd = []; 
-    snap.forEach(doc => originalHerd.push({ id: doc.id, ...doc.data() }));
-    populateMothersDropdown(); 
-    renderCows();
+    originalHerd = []; snap.forEach(doc => originalHerd.push({ id: doc.id, ...doc.data() }));
+    populateMothersDropdown(); renderCows();
   });
 }
 
@@ -254,20 +245,9 @@ function postaviFilterKravi(btn, filter) { activeCowFilter = filter; document.qu
 function filtrirajKravi() { renderCows(); }
 
 function zacuvajKravaJS() {
-  let obj = { 
-      earTag: document.getElementById('kravaUshen').value.trim(), 
-      name: document.getElementById('kravaIme').value.trim(), 
-      gender: document.getElementById('kravaPol').value, 
-      birthDate: document.getElementById('kravaRagjanje').value, 
-      mother: document.getElementById('kravaMajka').value, 
-      inseminationDate: document.getElementById('kravaOsemenuvanje').value, 
-      inseminationCount: parseInt(document.getElementById('kravaBrojOsemen').value)||0, 
-      timestamp: firebase.firestore.FieldValue.serverTimestamp() 
-  };
-  
+  let obj = { earTag: document.getElementById('kravaUshen').value.trim(), name: document.getElementById('kravaIme').value.trim(), gender: document.getElementById('kravaPol').value, birthDate: document.getElementById('kravaRagjanje').value, mother: document.getElementById('kravaMajka').value, inseminationDate: document.getElementById('kravaOsemenuvanje').value, inseminationCount: parseInt(document.getElementById('kravaBrojOsemen').value)||0, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
   if(!obj.earTag || !obj.birthDate) return showAlert("Ушниот број и датумот на раѓање се задолжителни!");
   showLoader("Зачувувам...");
-  
   let ref = selectedCowId ? db.collection("cows").doc(selectedCowId) : db.collection("cows").doc();
   ref.set(obj, {merge: true}).then(() => { hideLoader(); zatvoriModalKrava(); showToast("Успешно зачувано!"); }).catch(e => { hideLoader(); showAlert(e.message); });
 }
@@ -282,16 +262,14 @@ function potvrdiTelenje() {
   let d = document.getElementById('telenjeDatum').value; let calfTag = document.getElementById('telenjeTeleUshen').value; let motherId = document.getElementById('telenjeMajkaId').value;
   if(!d || !calfTag) return showAlert("Внесете датум и ушен број на телето!"); 
   showLoader("Регистрирам...");
-  
   let batch = db.batch();
-  batch.update(db.collection("cows").doc(motherId), { inseminationDate: "", inseminationCount: 0 }); // Mother becomes open
+  batch.update(db.collection("cows").doc(motherId), { inseminationDate: "", inseminationCount: 0 }); 
   batch.set(db.collection("cows").doc(), { earTag: calfTag, gender: document.getElementById('telenjeTelePol').value, birthDate: d, mother: document.getElementById('telenjeMajkaUshen').innerText, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-  
   batch.commit().then(() => { hideLoader(); zatvoriTelenje(); showToast("Телењето е успешно!"); }).catch(e => { hideLoader(); showAlert(e.message); });
 }
 
 // ==========================================
-// 7. REPORTS (CALCULATOR, EXCEL, PDF)
+// 7. REPORTS
 // ==========================================
 let reportTotalLiters = 0; let reportMonth = ""; let reportMilkPrice = 0; let reportTaxPercent = 0;
 
@@ -300,13 +278,10 @@ function izvestaj() {
   if(!c || c <= 0) return showAlert("Внесете цена!");
   let period = document.getElementById('godinaSelect').value + "-" + document.getElementById('mesecSelect').value;
   showLoader("Пресметувам...");
-  
   db.collection("milk").where("period", "==", period).get().then(snap => {
     hideLoader(); let totalLiters = 0; snap.forEach(doc => totalLiters += doc.data().liters);
     let bruto = totalLiters * c; let osnova = bruto * 0.20; let danok = osnova * (d/100); let neto = bruto - danok;
-    
     reportTotalLiters = totalLiters; reportMonth = period; reportMilkPrice = c; reportTaxPercent = d;
-    
     document.getElementById('resIzv').classList.remove('hidden'); 
     document.getElementById('vkLitri').innerText = totalLiters.toFixed(2) + " L"; 
     document.getElementById('vkBruto').innerText = bruto.toFixed(2) + " ден."; 
@@ -332,23 +307,14 @@ function generirajPDF() {
   if(reportTotalLiters === 0) return showAlert("Прво кликнете 'ПРЕСМЕТАЈ'.");
   showLoader("Генерирам PDF...");
   const { jsPDF } = window.jspdf; const doc = new jsPDF();
-  
   doc.setFontSize(22); doc.setTextColor(41, 128, 185); doc.text("FAKTURA ZA OTKUP NA MLEKO", 14, 20);
   doc.setFontSize(11); doc.setTextColor(100, 100, 100); doc.text("Farma Ilovski - s. Zilce, Tetovo", 14, 28); doc.text("Period: " + reportMonth, 14, 34); doc.text("Datum na izdavanje: " + new Date().toLocaleDateString('mk-MK'), 14, 40);
-  
   let bruto = reportTotalLiters * reportMilkPrice; let danok = (bruto * 0.20) * (reportTaxPercent/100); let neto = bruto - danok;
-  
-  doc.autoTable({
-    startY: 50, theme: 'grid', headStyles: { fillColor: [41, 128, 185] },
-    head: [['Opis', 'Kolicina (Litri)', 'Cena (den)', 'Danocna stapka', 'Vkupno (den)']],
-    body: [['Surovo kravjo mleko', reportTotalLiters.toFixed(2), reportMilkPrice.toFixed(2), reportTaxPercent + "%", bruto.toFixed(2)]],
-  });
-  
+  doc.autoTable({ startY: 50, theme: 'grid', headStyles: { fillColor: [41, 128, 185] }, head: [['Opis', 'Kolicina (Litri)', 'Cena (den)', 'Danocna stapka', 'Vkupno (den)']], body: [['Surovo kravjo mleko', reportTotalLiters.toFixed(2), reportMilkPrice.toFixed(2), reportTaxPercent + "%", bruto.toFixed(2)]], });
   let finalY = doc.lastAutoTable.finalY + 15; doc.setFontSize(12); doc.setTextColor(0, 0, 0);
   doc.text("Bruto iznos: " + bruto.toFixed(2) + " den.", 120, finalY);
   doc.text("Personalen danok: - " + danok.toFixed(2) + " den.", 120, finalY + 8);
   doc.setFontSize(14); doc.setTextColor(39, 174, 96); doc.text("ZA ISPLATA: " + neto.toFixed(2) + " den.", 120, finalY + 18);
-  
   hideLoader(); doc.save(`Faktura_${reportMonth}.pdf`);
 }
 
@@ -356,8 +322,7 @@ function drawChart() {
   db.collection("milk").get().then(snap => {
     let monthsMap = {};
     snap.forEach(doc => { let p = doc.data().period; if(p) monthsMap[p] = (monthsMap[p]||0) + doc.data().liters; });
-    let keys = Object.keys(monthsMap).sort().slice(-6); 
-    let values = keys.map(k => monthsMap[k]);
+    let keys = Object.keys(monthsMap).sort().slice(-6); let values = keys.map(k => monthsMap[k]);
     if(myChart) myChart.destroy();
     let ctx = document.getElementById('myChart'); if(!ctx) return;
     let isDark = document.body.classList.contains('dark-mode'); let cT = isDark ? '#94a3b8' : '#6c757d'; let cG = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
@@ -366,35 +331,26 @@ function drawChart() {
 }
 
 // ==========================================
-// 8. ADMIN PANEL (Upravljanje korisnicima, statusom i ulogama)
+// 8. ADMIN PANEL
 // ==========================================
 function loadUsers() {
   if(currentRole !== 'superadmin') return; 
-  
   db.collection("users").get().then(snap => {
-    let h = "";
-    let now = new Date();
-
+    let h = ""; let now = new Date();
     snap.forEach(doc => {
       let data = doc.data(); 
       let roleBadge = data.role === 'superadmin' ? 'bg-danger text-white' : (data.role === 'admin' ? 'bg-warning text-dark' : 'bg-info text-dark');
-      
-      // Detekcija "Online" statusa
-      let isOnline = false;
-      let lastActiveText = "Никогаш";
+      let isOnline = false; let lastActiveText = "Никогаш";
       
       if (data.lastActive) {
         let lastDate = data.lastActive.toDate();
-        // Smatra se online ako je bio aktivan u zadnjih 15 minuta (15 * 60 * 1000 ms)
         if ((now - lastDate) < 900000) {
-            isOnline = true;
-            lastActiveText = `<span class="text-success"><i class="bi bi-circle-fill" style="font-size: 0.6rem;"></i> Онлајн</span>`;
+            isOnline = true; lastActiveText = `<span class="text-success"><i class="bi bi-circle-fill" style="font-size: 0.6rem;"></i> Онлајн</span>`;
         } else {
             lastActiveText = ("0"+lastDate.getDate()).slice(-2)+"."+("0"+(lastDate.getMonth()+1)).slice(-2)+" " + ("0"+lastDate.getHours()).slice(-2)+":"+("0"+lastDate.getMinutes()).slice(-2);
         }
       }
 
-      // Akcije za meni
       let btnRole = ""; let btnPass = "";
       if (data.role !== 'superadmin') {
           btnRole = `<li><a class="dropdown-item" href="#" onclick="switchUserRole('${doc.id}', '${data.role}')"><i class="bi bi-arrow-left-right me-2"></i>Смени улога во ${data.role === 'admin' ? 'Корисник' : 'Админ'}</a></li>`;
@@ -403,22 +359,9 @@ function loadUsers() {
           btnRole = `<li><span class="dropdown-item text-muted"><i class="bi bi-shield-lock me-2"></i>Главен Администратор</span></li>`;
       }
 
-      let actionsHtml = `
-        <div class="dropdown">
-          <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" type="button" data-bs-toggle="dropdown">Акции <i class="bi bi-chevron-down ms-1"></i></button>
-          <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2">
-            ${btnRole}
-            ${btnPass}
-          </ul>
-        </div>
-      `;
+      let actionsHtml = `<div class="dropdown"><button class="btn btn-sm btn-outline-secondary rounded-pill px-3" type="button" data-bs-toggle="dropdown">Акции <i class="bi bi-chevron-down ms-1"></i></button><ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2">${btnRole}${btnPass}</ul></div>`;
 
-      h += `<tr>
-              <td><b>${data.email.split('@')[0]}</b><br><small class="text-muted" style="font-size: 0.7rem;">${data.email}</small></td>
-              <td class="text-center"><span class="badge ${roleBadge}">${data.role}</span></td>
-              <td class="text-center"><small class="text-muted fw-bold">${lastActiveText}</small></td>
-              <td class="text-end">${actionsHtml}</td>
-            </tr>`;
+      h += `<tr><td><b>${data.email.split('@')[0]}</b><br><small class="text-muted" style="font-size: 0.7rem;">${data.email}</small></td><td class="text-center"><span class="badge ${roleBadge}">${data.role}</span></td><td class="text-center"><small class="text-muted fw-bold">${lastActiveText}</small></td><td class="text-end">${actionsHtml}</td></tr>`;
     });
     document.getElementById('tabelaKorisnici').innerHTML = h;
   });
@@ -430,48 +373,25 @@ function dodajNovKorisnik() {
     let role = document.getElementById('novKorisnikUloga').value;
 
     if(!email || pass.length < 6) return showAlert("Внесете валиден е-маил и лозинка од минимум 6 карактери!");
-    
     showLoader("Креирање на корисник...");
 
-    // Koristimo secondaryApp da izbjegnemo prekid sesije superadmina
     secondaryApp.auth().createUserWithEmailAndPassword(email, pass)
         .then((userCredential) => {
             let noviUid = userCredential.user.uid;
-            
-            // Zapis korisnika u Firestore tabelu "users"
-            return db.collection("users").doc(noviUid).set({
-                email: email,
-                role: role,
-                lastActive: null 
-            });
+            return db.collection("users").doc(noviUid).set({ email: email, role: role, lastActive: null });
         })
         .then(() => {
-            secondaryApp.auth().signOut();
-            hideLoader();
-            showToast("Корисникот е успешно креиран!");
-            document.getElementById('novKorisnikEmail').value = "";
-            document.getElementById('novKorisnikPass').value = "";
-            loadUsers();
+            secondaryApp.auth().signOut(); hideLoader(); showToast("Корисникот е успешно креиран!");
+            document.getElementById('novKorisnikEmail').value = ""; document.getElementById('novKorisnikPass').value = ""; loadUsers();
         })
-        .catch((error) => {
-            hideLoader();
-            showAlert("Грешка при креирање: " + error.message);
-        });
+        .catch((error) => { hideLoader(); showAlert("Грешка при креирање: " + error.message); });
 }
 
 function switchUserRole(uid, currentRoleState) {
   let newRole = currentRoleState === 'admin' ? 'user' : 'admin';
-  showConfirm(`Сигурно менуваш улога во ${newRole}?`, () => {
-    db.collection("users").doc(uid).update({ role: newRole }).then(() => { 
-        showToast("Улогата е сменета!"); loadUsers(); 
-    });
-  });
+  showConfirm(`Сигурно менуваш улога во ${newRole}?`, () => { db.collection("users").doc(uid).update({ role: newRole }).then(() => { showToast("Улогата е сменета!"); loadUsers(); }); });
 }
 
 function sendPasswordReset(email) {
-  showConfirm(`Испрати линк за ресет на лозинка на ${email}?`, () => {
-    auth.sendPasswordResetEmail(email)
-      .then(() => { showToast("Мејлот за ресет е успешно испратен!"); })
-      .catch((error) => { showAlert("Грешка: " + error.message); });
-  });
+  showConfirm(`Испрати линк за ресет на лозинка на ${email}?`, () => { auth.sendPasswordResetEmail(email).then(() => { showToast("Мејлот за ресет е успешно испратен!"); }).catch((error) => { showAlert("Грешка: " + error.message); }); });
 }
