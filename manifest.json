@@ -1,0 +1,15 @@
+{
+  "name": "Фарма Иловски",
+  "short_name": "Фарма",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f7f6",
+  "theme_color": "#0d6efd",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1998/1998610.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -12,6 +12,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(); 
 const db = firebase.firestore();
+// Ова служи само за креирање корисници без да те одјави тебе
+const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
 
 let currentUserEmail = ""; 
 let currentRole = "user"; 
@@ -62,22 +64,18 @@ auth.onAuthStateChanged((user) => {
     currentUserEmail = user.email; 
     document.getElementById('displayUser').innerText = currentUserEmail.split('@')[0];
     
-    // Fetch user role from "users" collection
+    // Ажурирај "Последно активен" секогаш кога ќе влезе во апликацијата
+    db.collection("users").doc(user.uid).set({
+        lastActive: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
     db.collection("users").doc(user.uid).get()
       .then(doc => {
-        if(doc.exists && doc.data().role) {
-            currentRole = doc.data().role;
-        } else {
-            currentRole = "user"; // Default if doc doesn't exist
-        }
+        if(doc.exists && doc.data().role) currentRole = doc.data().role; 
+        else currentRole = "user";
         applyUserRoleUI();
       })
-      .catch(err => {
-        console.warn("Could not fetch user role (might be missing rules or offline):", err);
-        currentRole = "user"; // Fallback so the app doesn't freeze
-        applyUserRoleUI();
-      });
-
+      .catch(err => { currentRole = "user"; applyUserRoleUI(); });
   } else {
     hideLoader(); 
     document.getElementById('loginSection').classList.remove('hidden'); 
@@ -356,36 +354,115 @@ function drawChart() {
 }
 
 // // ==========================================
-// 8. ADMIN PANEL (Roles Management)
+// 8. ADMIN PANEL (User Management, Status & Roles)
 // ==========================================
+
 function loadUsers() {
-  if(currentRole !== 'superadmin') return; // Осигурување дека само ти го отвораш
+  if(currentRole !== 'superadmin') return; 
   
   db.collection("users").get().then(snap => {
     let h = "";
+    let now = new Date();
+
     snap.forEach(doc => {
       let data = doc.data(); 
-      let roleBadgeColor = data.role === 'superadmin' ? 'bg-danger text-white' : (data.role === 'admin' ? 'bg-warning text-dark' : 'bg-info text-dark');
+      let roleBadge = data.role === 'superadmin' ? 'bg-danger text-white' : (data.role === 'admin' ? 'bg-warning text-dark' : 'bg-info text-dark');
       
-      // Не дозволуваме копче "Смени улога" за тебе (супер админот) за да не се заклучиш случајно надвор
-      let btnAction = data.role === 'superadmin' ? '<small class="text-muted">Главен</small>' : `<button onclick="switchUserRole('${doc.id}', '${data.role}')" class="btn btn-sm btn-outline-secondary">Смени улога</button>`;
+      // Калкулација на Онлајн Статус
+      let isOnline = false;
+      let lastActiveText = "Никогаш";
       
-      h += `<tr><td><b>${data.email}</b></td><td class="text-center"><span class="badge ${roleBadgeColor}">${data.role}</span></td><td class="text-end">${btnAction}</td></tr>`;
+      if (data.lastActive) {
+        let lastDate = data.lastActive.toDate();
+        // Ако бил активен во последните 15 минути (15 * 60 * 1000 ms), сметај го за Онлајн
+        if ((now - lastDate) < 900000) {
+            isOnline = true;
+            lastActiveText = `<span class="text-success"><i class="bi bi-circle-fill" style="font-size: 0.6rem;"></i> Онлајн</span>`;
+        } else {
+            // Форматирај датум (Пр: 15.10.2023 14:30)
+            lastActiveText = ("0"+lastDate.getDate()).slice(-2)+"."+("0"+(lastDate.getMonth()+1)).slice(-2)+" " + ("0"+lastDate.getHours()).slice(-2)+":"+("0"+lastDate.getMinutes()).slice(-2);
+        }
+      }
+
+      // Акции (Забрането е менување улога на себеси)
+      let btnRole = ""; let btnPass = "";
+      if (data.role !== 'superadmin') {
+          btnRole = `<li><a class="dropdown-item" href="#" onclick="switchUserRole('${doc.id}', '${data.role}')"><i class="bi bi-arrow-left-right me-2"></i>Смени улога во ${data.role === 'admin' ? 'Корисник' : 'Админ'}</a></li>`;
+          btnPass = `<li><a class="dropdown-item text-danger" href="#" onclick="sendPasswordReset('${data.email}')"><i class="bi bi-key me-2"></i>Испрати ресет за лозинка</a></li>`;
+      } else {
+          btnRole = `<li><span class="dropdown-item text-muted"><i class="bi bi-shield-lock me-2"></i>Главен Администратор</span></li>`;
+      }
+
+      let actionsHtml = `
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" type="button" data-bs-toggle="dropdown">Акции <i class="bi bi-chevron-down ms-1"></i></button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2">
+            ${btnRole}
+            ${btnPass}
+          </ul>
+        </div>
+      `;
+
+      h += `<tr>
+              <td><b>${data.email.split('@')[0]}</b><br><small class="text-muted" style="font-size: 0.7rem;">${data.email}</small></td>
+              <td class="text-center"><span class="badge ${roleBadge}">${data.role}</span></td>
+              <td class="text-center"><small class="text-muted fw-bold">${lastActiveText}</small></td>
+              <td class="text-end">${actionsHtml}</td>
+            </tr>`;
     });
     document.getElementById('tabelaKorisnici').innerHTML = h;
   });
 }
 
+function dodajNovKorisnik() {
+    let email = document.getElementById('novKorisnikEmail').value.trim();
+    let pass = document.getElementById('novKorisnikPass').value;
+    let role = document.getElementById('novKorisnikUloga').value;
+
+    if(!email || pass.length < 6) return showAlert("Внесете валиден е-маил и лозинка од минимум 6 карактери!");
+    
+    showLoader("Креирање на корисник...");
+
+    // Користиме secondaryApp за да не се одјавиме ние!
+    secondaryApp.auth().createUserWithEmailAndPassword(email, pass)
+        .then((userCredential) => {
+            let noviUid = userCredential.user.uid;
+            
+            // Запиши го во Firestore
+            return db.collection("users").doc(noviUid).set({
+                email: email,
+                role: role,
+                lastActive: null // Се уште не се најавил
+            });
+        })
+        .then(() => {
+            // Веднаш го одјавуваме од секундарната апликација за да ја исчистиме
+            secondaryApp.auth().signOut();
+            hideLoader();
+            showToast("Корисникот е успешно креиран!");
+            document.getElementById('novKorisnikEmail').value = "";
+            document.getElementById('novKorisnikPass').value = "";
+            loadUsers(); // Освежи ја табелата
+        })
+        .catch((error) => {
+            hideLoader();
+            showAlert("Грешка при креирање: " + error.message);
+        });
+}
+
 function switchUserRole(uid, currentRoleState) {
-  if (currentRoleState === 'superadmin') {
-      return showAlert("Не можете да ја промените улогата на Супер Админот!");
-  }
-  
   let newRole = currentRoleState === 'admin' ? 'user' : 'admin';
-  showConfirm(`Дали си сигурен дека сакаш да ја смениш улогата во ${newRole}?`, () => {
+  showConfirm(`Сигурно менуваш улога во ${newRole}?`, () => {
     db.collection("users").doc(uid).update({ role: newRole }).then(() => { 
-        showToast("Улогата е сменета!"); 
-        loadUsers(); 
+        showToast("Улогата е сменета!"); loadUsers(); 
     });
+  });
+}
+
+function sendPasswordReset(email) {
+  showConfirm(`Испрати линк за ресет на лозинка на ${email}?`, () => {
+    auth.sendPasswordResetEmail(email)
+      .then(() => { showToast("Мејлот за ресет е успешно испратен!"); })
+      .catch((error) => { showAlert("Грешка: " + error.message); });
   });
 }

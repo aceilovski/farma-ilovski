@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <title>ФАРМА ИЛОВСКИ</title>
-  
+  <link rel="manifest" href="manifest.json">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -79,9 +79,60 @@
 
       <div id="viewReports" class="hidden"><div class="row g-4 mb-3"><div class="col-md-5"><div class="card app-card border-0 h-100 shadow-sm"><div class="card-body p-4 p-md-5 d-flex flex-column"><div class="text-center mb-4"><div class="app-icon-wrapper bg-success bg-opacity-10 text-success mb-3 mx-auto"><i class="bi bi-calculator fs-2"></i></div><h5 class="fw-bold text-dark mb-1">Калкулатор</h5></div><div class="row g-2 mb-3"><div class="col-6"><div class="form-floating"><input type="number" class="form-control app-input fw-bold text-center" id="cenaMleko" placeholder="0"><label class="text-muted small">Цена (ден/L)</label></div></div><div class="col-6"><div class="form-floating"><input type="number" class="form-control app-input fw-bold text-center" id="danokMleko" placeholder="0"><label class="text-muted small">Данок (%)</label></div></div></div><div class="row g-2 mb-4"><div class="col-7"><div class="form-floating"><select id="mesecSelect" class="form-select app-input fw-bold text-center"></select><label class="text-muted small">Месец</label></div></div><div class="col-5"><div class="form-floating"><select id="godinaSelect" class="form-select app-input fw-bold text-center"></select><label class="text-muted small">Година</label></div></div></div><button onclick="izvestaj()" class="btn btn-primary w-100 mb-3 py-3 fw-bold app-btn btn-glow">ПРЕСМЕТАЈ</button><div id="resIzv" class="hidden mt-3 p-4 rounded-4 result-box"><div class="d-flex justify-content-between mb-2"><span class="text-muted">Литри:</span> <strong id="vkLitri" class="text-dark">0 L</strong></div><div class="d-flex justify-content-between mb-2"><span class="text-muted">Бруто:</span> <strong id="vkBruto" class="text-dark">0 ден.</strong></div><div class="d-flex justify-content-between mb-3"><span class="text-muted small">Даночна основа (20%):</span> <strong id="vkOsnova" class="text-muted small">0 ден.</strong></div><div class="d-flex justify-content-between mb-3 text-danger"><span class="opacity-75">Персонален данок:</span> <strong id="vkDanok">- 0 ден.</strong></div><div class="border-top pt-3 d-flex justify-content-between align-items-center"><span class="fw-bold text-primary small text-uppercase">ЗА ИСПЛАТА:</span> <strong id="vkNeto" class="text-success fs-4">0 ден.</strong></div></div><div class="d-flex gap-2 mt-4"><button onclick="generirajPDF()" class="btn btn-danger w-50 py-3 fw-bold app-btn shadow-sm"><i class="bi bi-file-earmark-pdf-fill me-2"></i>PDF</button><button onclick="generirajExcel()" class="btn btn-success w-50 py-3 fw-bold app-btn shadow-sm"><i class="bi bi-file-earmark-excel-fill me-2"></i>EXCEL</button></div></div></div></div><div class="col-md-7"><div class="card app-card border-0 h-100 shadow-sm"><div class="card-body p-4 p-md-5 d-flex flex-column"><div class="text-center mb-4"><div class="app-icon-wrapper mb-3 mx-auto" style="background: rgba(168, 85, 247, 0.1); color: #a855f7;"><i class="bi bi-bar-chart-fill fs-2"></i></div><h5 class="fw-bold text-dark mb-1">Анализа по месеци</h5></div><div class="chart-container" style="position: relative; height: 350px; width: 100%; margin-top: auto; margin-bottom: auto;"><canvas id="myChart"></canvas></div></div></div></div></div></div>
 
-      <div id="viewAdmin" class="hidden"><div class="row g-4"><div class="col-md-12"><div class="card app-card border-0 h-100 shadow-sm"><div class="card-body p-4 p-md-5 d-flex flex-column"><div class="text-center mb-4"><div class="app-icon-wrapper bg-warning bg-opacity-10 text-warning mb-3 mx-auto"><i class="bi bi-shield-lock-fill fs-2"></i></div><h5 class="fw-bold text-dark mb-1">Админ Панел (Улоги)</h5><p class="small text-muted">Контролирај кој има пристап за бришење и уредување преку Firestore.</p></div><div class="table-responsive custom-scrollbar"><table class="table table-hover mb-0 align-middle"><thead class="bg-white"><tr><th class="text-muted small">КОРИСНИК (Е-маил)</th><th class="text-muted small text-center">УЛОГА</th><th class="text-end">АКЦИЈА</th></tr></thead><tbody id="tabelaKorisnici"></tbody></table></div></div></div></div></div></div>
-
+      <div id="viewAdmin" class="hidden">
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card app-card border-0 h-100 shadow-sm">
+        <div class="card-body p-4 d-flex flex-column">
+          <div class="text-center mb-4">
+            <div class="app-icon-wrapper bg-primary bg-opacity-10 text-primary mb-3 mx-auto"><i class="bi bi-person-plus-fill fs-3"></i></div>
+            <h6 class="fw-bold text-dark mb-1">Додај Корисник</h6>
+          </div>
+          <div class="form-floating mb-3">
+            <input type="email" class="form-control app-input" id="novKorisnikEmail" placeholder="Е-маил">
+            <label class="text-muted small">Е-маил адреса</label>
+          </div>
+          <div class="form-floating mb-3">
+            <input type="password" class="form-control app-input" id="novKorisnikPass" placeholder="Лозинка">
+            <label class="text-muted small">Привремена лозинка (мин. 6)</label>
+          </div>
+          <div class="form-floating mb-4">
+            <select class="form-select app-input" id="novKorisnikUloga">
+              <option value="user">Обичен Корисник</option>
+              <option value="admin">Админ</option>
+            </select>
+            <label class="text-muted small">Улога</label>
+          </div>
+          <button onclick="dodajNovKorisnik()" class="btn btn-primary w-100 py-3 fw-bold app-btn btn-glow mt-auto">КРЕИРАЈ</button>
+        </div>
+      </div>
     </div>
+
+    <div class="col-md-8">
+      <div class="card app-card border-0 h-100 shadow-sm">
+        <div class="card-body p-4 d-flex flex-column">
+          <div class="text-center mb-4">
+            <div class="app-icon-wrapper bg-warning bg-opacity-10 text-warning mb-3 mx-auto"><i class="bi bi-shield-lock-fill fs-3"></i></div>
+            <h5 class="fw-bold text-dark mb-1">Менаџирање Корисници</h5>
+          </div>
+          <div class="table-responsive custom-scrollbar" style="max-height: 500px;">
+            <table class="table table-hover mb-0 align-middle">
+              <thead class="bg-white" style="position: sticky; top: 0;">
+                <tr>
+                  <th class="text-muted small">КОРИСНИК</th>
+                  <th class="text-muted small text-center">УЛОГА</th>
+                  <th class="text-muted small text-center">АКТИВНОСТ</th>
+                  <th class="text-end text-muted small">АКЦИИ</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaKorisnici"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
   </div>
 
   <script src="app.js"></script>
