@@ -1,140 +1,286 @@
 <!DOCTYPE html>
 <html lang="mk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-  <title>ФАРМА ИЛОВСКИ</title>
-  <link rel="manifest" href="manifest.json">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Фарма Иловски</title>
 
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              glass: 'rgba(255, 255, 255, 0.4)',
+              glassDark: 'rgba(0, 0, 0, 0.4)',
+            }
+          }
+        }
+      }
+    </script>
 
-  <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <link rel="stylesheet" href="style.css">
 </head>
-<body ontouchstart="">
+<body class="bg-gradient-to-br from-purple-200 to-blue-200 dark:from-slate-900 dark:via-cyan-900 dark:to-slate-800 text-gray-800 dark:text-gray-100 min-h-screen pb-24 transition-colors duration-500 font-sans">
 
-  <div id="toastNotification">Успешно!</div>
-  
-  <div id="customAlert" class="custom-modal-overlay"><div class="custom-modal-box p-4 border-0"><div class="mb-3 text-primary"><i class="bi bi-info-circle-fill" style="font-size: 3rem;"></i></div><h6 id="alertText" class="fw-bold mb-4 text-dark" style="font-size: 1.1rem;"></h6><button class="btn btn-primary app-btn w-100 py-3 fw-bold btn-glow" onclick="closeAlert()">Во ред</button></div></div>
-  <div id="customConfirm" class="custom-modal-overlay"><div class="custom-modal-box p-4 border-0"><div class="mb-3 text-danger"><i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem;"></i></div><h6 id="confirmText" class="fw-bold mb-4 text-dark" style="font-size: 1.1rem;"></h6><div class="d-flex gap-3"><button class="btn btn-light app-btn w-50 py-3 fw-bold text-muted border" onclick="closeConfirm(false)">Откажи</button><button id="confirmYesBtn" class="btn btn-danger app-btn w-50 py-3 fw-bold shadow-sm">Потврди</button></div></div></div>
-  <div id="customPrompt" class="custom-modal-overlay"><div class="custom-modal-box p-4 border-0"><div class="mb-3 text-dark"><i class="bi bi-pencil-square" style="font-size: 3rem;"></i></div><h6 id="promptText" class="fw-bold mb-3 text-dark"></h6><input type="text" id="promptInput" class="form-control app-input text-center mb-4 fw-bold" style="font-size: 1.25rem;"><div class="d-flex gap-3"><button class="btn btn-light app-btn w-50 py-3 fw-bold text-muted border" onclick="closePrompt(false)">Откажи</button><button id="promptYesBtn" class="btn btn-primary app-btn w-50 py-3 fw-bold shadow-sm">Зачувај</button></div></div></div>
-
-  <div id="modalKrava" class="custom-modal-overlay"><div class="custom-modal-box p-4 border-0 custom-scrollbar" style="max-height: 90vh; overflow-y: auto;"><div class="text-center mb-4"><div class="mb-3" style="color: #20c997;"><i class="bi bi-clipboard2-pulse-fill" style="font-size: 3rem;"></i></div><h5 id="kravaFormTitle" class="fw-bold text-dark mb-1">Ново Грло</h5></div><input type="hidden" id="kravaId"><div class="form-floating mb-3"><input type="text" class="form-control app-input fw-bold border-primary" id="kravaUshen" placeholder="Ушен број"><label class="text-primary"><i class="bi bi-tag-fill me-2"></i>Ушен број *</label></div><div class="form-floating mb-3"><input type="text" class="form-control app-input fw-bold border-info" id="kravaIme" placeholder="Име на грлото"><label class="text-info text-dark"><i class="bi bi-stars me-2"></i>Име (опционално)</label></div><div class="form-floating mb-3"><select class="form-select app-input fw-bold border-danger" id="kravaPol" onchange="osveziKravaUI()"><option value="Женско">Женско</option><option value="Машко">Машко</option></select><label class="text-danger"><i class="bi bi-gender-female me-2"></i>Пол</label></div><div class="form-floating mb-3"><input type="date" class="form-control app-input border-primary" id="kravaRagjanje" onchange="osveziKravaUI()"><label class="text-primary"><i class="bi bi-calendar-heart me-2"></i>Датум раѓање *</label></div><div class="form-floating mb-3"><select class="form-select app-input" id="kravaMajka"><option value="">Непозната / Купена</option></select><label class="text-muted"><i class="bi bi-diagram-2 me-2"></i>Генетика (Мајка)</label></div><div id="reprodukcijaBlok" class="hidden rounded-4 p-3 mb-3" style="background-color: #fff8f1; border: 1px solid #ffedd5;"><h6 class="fw-bold mb-3 text-warning" style="font-size: 0.9rem;"><i class="bi bi-activity me-1"></i> Репродукција</h6><div class="row g-2"><div class="col-8"><div class="form-floating"><input type="date" class="form-control app-input border-warning" id="kravaOsemenuvanje"><label class="text-warning text-dark"><i class="bi bi-calendar-plus me-2"></i>Осеменета на</label></div></div><div class="col-4"><div class="form-floating"><input type="number" class="form-control app-input text-center fw-bold bg-light" id="kravaBrojOsemen" value="0" min="0"><label class="text-muted">Бр. пати</label></div></div></div></div><div class="d-flex gap-3 mt-4 pt-3 border-top"><button class="btn btn-light app-btn w-50 py-3 fw-bold text-muted border" onclick="zatvoriModalKrava()">Откажи</button><button id="btnZacuvajKrava" class="btn btn-success app-btn w-50 py-3 fw-bold shadow-sm" onclick="zacuvajKravaJS()">Зачувај</button></div></div></div>
-
-  <div id="modalTelenje" class="custom-modal-overlay"><div class="custom-modal-box p-4 border-0"><div class="mb-3 text-success"><i class="bi bi-stars" style="font-size: 3rem;"></i></div><h5 class="fw-bold mb-1 text-dark">Регистрација на Телење</h5><p class="small text-muted mb-3">Мајка: <strong id="telenjeMajkaUshen" class="text-primary"></strong></p><input type="hidden" id="telenjeMajkaId"><input type="hidden" id="telenjeMajkaRasa"><div class="form-floating mb-3"><input type="date" class="form-control app-input border-success" id="telenjeDatum"><label class="text-success fw-bold"><i class="bi bi-calendar-event me-2"></i>Датум на телење *</label></div><div class="form-floating mb-3"><input type="text" class="form-control app-input fw-bold" id="telenjeTeleUshen" placeholder="Ушен број на теле"><label class="text-muted">Ушен број на новото теле *</label></div><div class="form-floating mb-4"><select class="form-select app-input" id="telenjeTelePol"><option value="Женско">Женско</option><option value="Машко">Машко</option></select><label class="text-muted">Пол на телето</label></div><div class="d-flex gap-3"><button class="btn btn-light app-btn w-50 py-3 fw-bold text-muted border" onclick="zatvoriTelenje()">Откажи</button><button class="btn btn-success app-btn w-50 py-3 fw-bold shadow-sm" onclick="potvrdiTelenje()">Зачувај</button></div></div></div>
-
-  <div id="globalLoader"><div class="spinner"></div><h5 class="text-primary fw-bold" id="loaderText">Се вчитува...</h5></div>
-
-  <div class="container" style="max-width: 900px;">
-    <div id="loginSection" class="login-wrapper">
-      <div class="card app-card border-0 shadow-sm mx-auto" style="width: 100%; max-width: 400px;">
-        <div class="card-body p-4 p-md-5 d-flex flex-column">
-          <div class="text-center mb-4"><div class="app-icon-wrapper bg-primary bg-opacity-10 text-primary mb-3 mx-auto"><span style="font-size: 2.5rem; line-height: 1;">🐄</span></div><h4 class="fw-bold text-dark mb-1">ФАРМА ИЛОВСКИ</h4><p class="text-muted small">Систем за евиденција (Firebase)</p></div>
-          <div id="loginFormInner"><div class="form-floating mb-3"><input type="email" class="form-control app-input" id="user" placeholder="Е-маил"><label class="text-muted"><i class="bi bi-envelope me-2"></i>Е-маил адреса</label></div><div class="form-floating mb-4 position-relative"><input type="password" class="form-control app-input" id="pass" placeholder="Лозинка" onkeydown="if(event.key === 'Enter'){ login(); }"><label class="text-muted"><i class="bi bi-lock me-2"></i>Лозинка</label></div><button onclick="login()" id="lBtn" class="btn btn-primary w-100 py-3 fw-bold app-btn btn-glow">НАЈАВИ СЕ</button></div>
-          <div id="msg" class="text-danger mt-3 small text-center fw-bold"></div>
-        </div>
-      </div>
+    <div id="globalLoader" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-md hidden" style="display:flex;">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600"></div>
+        <div class="mt-4 font-bold text-lg" id="loaderText">Се вчитува...</div>
     </div>
 
-    <div id="mainSection" class="hidden">
-      <div class="top-bar glass-nav mb-4 sticky-top">
-        <div class="d-flex align-items-center gap-2"><div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center" style="width: 38px; height: 38px;"><span style="font-size: 1.3rem; line-height: 1;">🐄</span></div><div><h6 class="m-0 fw-bold text-dark" style="line-height: 1.2;">Здраво, <span id="displayUser" class="text-primary"></span></h6><span id="displayRole" class="badge border mt-1 bg-info text-dark" style="font-size: 0.65rem;">Корисник</span></div></div>
-        <button id="themeToggleBtn" class="btn btn-sm btn-outline-secondary rounded-circle ms-auto me-3 shadow-sm" style="width: 38px; height: 38px;" onclick="toggleTheme()"><i id="themeIcon" class="bi bi-moon-fill text-secondary"></i></button>
-        <button class="mobile-toggle shadow-sm" onclick="toggleMenu()"><i class="bi bi-list"></i></button>
-        <div id="navButtons" class="nav-buttons">
-          <button id="btnHome" onclick="switchView('home')" class="btn nav-btn active-nav"><i class="bi bi-house-door me-2"></i>Почетна</button>
-          <button id="btnKravi" onclick="switchView('kravi')" class="btn nav-btn"><i class="bi bi-list-columns-reverse me-2"></i>Стадо <span id="stadoBadge" class="badge bg-danger rounded-pill ms-1 hidden">0</span></button>
-          <button id="btnReports" onclick="switchView('reports')" class="btn nav-btn"><i class="bi bi-graph-up me-2"></i>Извештаи</button>
-          <button id="btnAdmin" onclick="switchView('admin')" class="btn nav-btn hidden"><i class="bi bi-shield-lock me-2"></i>Админ</button>
-          <div class="nav-divider d-none d-md-block mx-2"></div>
-          <button onclick="odjaviSe()" class="btn nav-btn text-danger"><i class="bi bi-box-arrow-right me-2"></i>Излез</button>
+    <nav class="sticky top-0 z-30 bg-white/40 dark:bg-black/40 backdrop-blur-md border-b border-white/40 dark:border-white/10 shadow-sm px-4 py-3 flex justify-between items-center">
+        <h1 class="text-xl font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
+            <i class="bi bi-droplet-fill"></i> Фарма Иловски
+        </h1>
+        <div class="flex gap-2">
+            <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-white/50 dark:hover:bg-white/10 transition">
+                <i id="themeIcon" class="bi bi-moon-fill text-gray-600 dark:text-yellow-400"></i>
+            </button>
+            <button onclick="odjaviSe()" class="p-2 rounded-full text-red-500 hover:bg-red-500/10 transition">
+                <i class="bi bi-box-arrow-right text-xl"></i>
+            </button>
         </div>
-      </div>
+    </nav>
 
-      <div id="viewHome">
-        <div class="row g-4 mb-3">
-          <div class="col-md-6"><div class="card app-card border-0 h-100 shadow-sm"><div class="card-body p-4 p-md-5 d-flex flex-column"><div class="text-center mb-4"><div class="app-icon-wrapper bg-primary bg-opacity-10 text-primary mb-3 mx-auto"><i class="bi bi-droplet-fill fs-2"></i></div><h5 class="fw-bold text-dark mb-1">Внес на млеко</h5></div><div class="form-floating mb-3"><input type="number" class="form-control app-input fw-bold text-center" style="font-size: 1.2rem;" id="meracMm" placeholder="0" oninput="presmetajOdMm()"><label class="text-muted"><i class="bi bi-rulers me-2"></i>Лактофризер (mm)</label></div><div class="form-floating mb-3"><input type="number" class="form-control app-input fw-bold text-center text-primary" style="font-size: 1.8rem; height: 75px;" id="litri" placeholder="0"><label class="text-muted"><i class="bi bi-bucket me-2"></i>Вкупно Литри</label></div><button onclick="zacuvajMleko()" class="btn btn-primary w-100 py-3 mb-3 fw-bold app-btn btn-glow">ЗАЧУВАЈ ЛИТРИ</button><div class="mt-auto pt-3 border-top text-center"><small class="text-muted fw-bold text-uppercase">Вкупно овој месец</small><h3 class="m-0 text-primary fw-bold mt-1"><span id="vkupnoOvojMesec">0.00</span> <small class="text-muted fs-6">L</small></h3></div></div></div></div>
-          <div class="col-md-6"><div class="card app-card border-0 h-100 shadow-sm"><div class="card-body p-4 p-md-5 d-flex flex-column"><div class="text-center mb-4"><div class="app-icon-wrapper bg-info bg-opacity-10 text-info mb-3 mx-auto"><i class="bi bi-clock-history fs-2"></i></div><h5 class="fw-bold text-dark mb-1">Последни Записи</h5></div><div class="table-responsive custom-scrollbar" style="max-height: 300px;"><table class="table table-hover mb-0 align-middle"><thead class="bg-white" style="position: sticky; top: 0;"><tr><th class="text-muted small">ДАТУМ</th><th class="text-muted small">ЛИТРИ</th><th class="text-muted small">КОРИСНИК</th><th id="thEdit" class="hidden"></th></tr></thead><tbody id="tabelaZapisi"></tbody></table></div></div></div></div>
+    <div id="loginSection" class="container mx-auto px-4 mt-10 hidden max-w-md">
+        <div class="bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-2xl rounded-3xl p-8 text-center">
+            <i class="bi bi-person-circle text-blue-500 text-6xl mb-4 inline-block"></i>
+            <h2 class="text-2xl font-bold mb-6">Најава</h2>
+            <input type="email" id="user" class="w-full mb-4 px-4 py-3 rounded-xl bg-white/60 dark:bg-black/30 border border-white/50 dark:border-white/20 focus:ring-2 focus:ring-blue-400 outline-none transition" placeholder="Е-маил">
+            <input type="password" id="pass" class="w-full mb-6 px-4 py-3 rounded-xl bg-white/60 dark:bg-black/30 border border-white/50 dark:border-white/20 focus:ring-2 focus:ring-blue-400 outline-none transition" placeholder="Лозинка">
+            <button id="lBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition" onclick="login()">Влез</button>
+            <p id="msg" class="text-red-500 mt-4 font-bold text-sm h-5"></p>
         </div>
-      </div>
-
-      <div id="viewKravi" class="hidden">
-        <div class="card app-card border-0 h-100 shadow-sm"><div class="card-body p-4 d-flex flex-column">
-          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <div><h5 class="fw-bold text-dark mb-0">Моментално Стадо</h5><small class="text-muted" id="vkupnoKraviBroj">Вкупно: 0 грла</small></div>
-            <div class="d-flex gap-2"><button onclick="otvoriNovaKravaModal()" class="btn btn-primary rounded-pill shadow-sm px-3 fw-bold"><i class="bi bi-plus-lg me-1"></i> Ново</button></div>
-          </div>
-          <div class="position-relative mb-3 shadow-sm"><input type="text" id="prebarajKravi" class="form-control app-input fw-bold pe-5" placeholder="Пребарај ушен број..." onkeyup="filtrirajKravi()"><i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i></div>
-          <div class="d-flex gap-2 overflow-auto pb-2 custom-scrollbar" id="kraviFiltri"><button class="btn btn-sm btn-primary rounded-pill px-3 filter-btn" onclick="postaviFilterKravi(this, 'Site')">Сите</button><button class="btn btn-sm btn-outline-info rounded-pill px-3 filter-btn text-dark fw-bold" onclick="postaviFilterKravi(this, 'Стелни')">Стелни</button><button class="btn btn-sm btn-outline-success rounded-pill px-3 filter-btn" onclick="postaviFilterKravi(this, 'Отворена')">Отворени</button></div>
-          <div class="table-responsive custom-scrollbar" style="max-height: 500px;"><table class="table table-hover mb-0 align-middle"><thead class="bg-white" style="position: sticky; top: 0;"><tr><th class="text-muted small">ГРЛО / ВОЗРАСТ</th><th class="text-muted small text-center">КАТЕГОРИЈА & СТАТУС</th><th class="text-muted small text-center">ОСЕМЕНЕТА</th><th class="text-end"></th></tr></thead><tbody id="tabelaKravi"></tbody></table></div>
-        </div></div>
-      </div>
-
-      <div id="viewReports" class="hidden"><div class="row g-4 mb-3"><div class="col-md-5"><div class="card app-card border-0 h-100 shadow-sm"><div class="card-body p-4 p-md-5 d-flex flex-column"><div class="text-center mb-4"><div class="app-icon-wrapper bg-success bg-opacity-10 text-success mb-3 mx-auto"><i class="bi bi-calculator fs-2"></i></div><h5 class="fw-bold text-dark mb-1">Калкулатор</h5></div><div class="row g-2 mb-3"><div class="col-6"><div class="form-floating"><input type="number" class="form-control app-input fw-bold text-center" id="cenaMleko" placeholder="0"><label class="text-muted small">Цена (ден/L)</label></div></div><div class="col-6"><div class="form-floating"><input type="number" class="form-control app-input fw-bold text-center" id="danokMleko" placeholder="0"><label class="text-muted small">Данок (%)</label></div></div></div><div class="row g-2 mb-4"><div class="col-7"><div class="form-floating"><select id="mesecSelect" class="form-select app-input fw-bold text-center"></select><label class="text-muted small">Месец</label></div></div><div class="col-5"><div class="form-floating"><select id="godinaSelect" class="form-select app-input fw-bold text-center"></select><label class="text-muted small">Година</label></div></div></div><button onclick="izvestaj()" class="btn btn-primary w-100 mb-3 py-3 fw-bold app-btn btn-glow">ПРЕСМЕТАЈ</button><div id="resIzv" class="hidden mt-3 p-4 rounded-4 result-box"><div class="d-flex justify-content-between mb-2"><span class="text-muted">Литри:</span> <strong id="vkLitri" class="text-dark">0 L</strong></div><div class="d-flex justify-content-between mb-2"><span class="text-muted">Бруто:</span> <strong id="vkBruto" class="text-dark">0 ден.</strong></div><div class="d-flex justify-content-between mb-3"><span class="text-muted small">Даночна основа (20%):</span> <strong id="vkOsnova" class="text-muted small">0 ден.</strong></div><div class="d-flex justify-content-between mb-3 text-danger"><span class="opacity-75">Персонален данок:</span> <strong id="vkDanok">- 0 ден.</strong></div><div class="border-top pt-3 d-flex justify-content-between align-items-center"><span class="fw-bold text-primary small text-uppercase">ЗА ИСПЛАТА:</span> <strong id="vkNeto" class="text-success fs-4">0 ден.</strong></div></div><div class="d-flex gap-2 mt-4"><button onclick="generirajPDF()" class="btn btn-danger w-50 py-3 fw-bold app-btn shadow-sm"><i class="bi bi-file-earmark-pdf-fill me-2"></i>PDF</button><button onclick="generirajExcel()" class="btn btn-success w-50 py-3 fw-bold app-btn shadow-sm"><i class="bi bi-file-earmark-excel-fill me-2"></i>EXCEL</button></div></div></div></div><div class="col-md-7"><div class="card app-card border-0 h-100 shadow-sm"><div class="card-body p-4 p-md-5 d-flex flex-column"><div class="text-center mb-4"><div class="app-icon-wrapper mb-3 mx-auto" style="background: rgba(168, 85, 247, 0.1); color: #a855f7;"><i class="bi bi-bar-chart-fill fs-2"></i></div><h5 class="fw-bold text-dark mb-1">Анализа по месеци</h5></div><div class="chart-container" style="position: relative; height: 350px; width: 100%; margin-top: auto; margin-bottom: auto;"><canvas id="myChart"></canvas></div></div></div></div></div></div>
-
-      <div id="viewAdmin" class="hidden">
-  <div class="row g-4">
-    <div class="col-md-4">
-      <div class="card app-card border-0 h-100 shadow-sm">
-        <div class="card-body p-4 d-flex flex-column">
-          <div class="text-center mb-4">
-            <div class="app-icon-wrapper bg-primary bg-opacity-10 text-primary mb-3 mx-auto"><i class="bi bi-person-plus-fill fs-3"></i></div>
-            <h6 class="fw-bold text-dark mb-1">Додај Корисник</h6>
-          </div>
-          <div class="form-floating mb-3">
-            <input type="email" class="form-control app-input" id="novKorisnikEmail" placeholder="Е-маил">
-            <label class="text-muted small">Е-маил адреса</label>
-          </div>
-          <div class="form-floating mb-3">
-            <input type="password" class="form-control app-input" id="novKorisnikPass" placeholder="Лозинка">
-            <label class="text-muted small">Привремена лозинка (мин. 6)</label>
-          </div>
-          <div class="form-floating mb-4">
-            <select class="form-select app-input" id="novKorisnikUloga">
-              <option value="user">Обичен Корисник</option>
-              <option value="admin">Админ</option>
-            </select>
-            <label class="text-muted small">Улога</label>
-          </div>
-          <button onclick="dodajNovKorisnik()" class="btn btn-primary w-100 py-3 fw-bold app-btn btn-glow mt-auto">КРЕИРАЈ</button>
-        </div>
-      </div>
     </div>
 
-    <div class="col-md-8">
-      <div class="card app-card border-0 h-100 shadow-sm">
-        <div class="card-body p-4 d-flex flex-column">
-          <div class="text-center mb-4">
-            <div class="app-icon-wrapper bg-warning bg-opacity-10 text-warning mb-3 mx-auto"><i class="bi bi-shield-lock-fill fs-3"></i></div>
-            <h5 class="fw-bold text-dark mb-1">Менаџирање Корисници</h5>
-          </div>
-          <div class="table-responsive custom-scrollbar" style="max-height: 500px;">
-            <table class="table table-hover mb-0 align-middle">
-              <thead class="bg-white" style="position: sticky; top: 0;">
-                <tr>
-                  <th class="text-muted small">КОРИСНИК</th>
-                  <th class="text-muted small text-center">УЛОГА</th>
-                  <th class="text-muted small text-center">АКТИВНОСТ</th>
-                  <th class="text-end text-muted small">АКЦИИ</th>
-                </tr>
-              </thead>
-              <tbody id="tabelaKorisnici"></tbody>
-            </table>
-          </div>
+    <div id="mainSection" class="container mx-auto px-4 mt-6 hidden max-w-4xl">
+        
+        <div class="mb-6 px-2">
+            <p class="text-sm text-gray-600 dark:text-gray-400">Најавен како:</p>
+            <p id="displayUser" class="text-xl font-bold"></p>
+            <div id="displayRole" class="mt-1"></div>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
-  </div>
 
-  <script src="app.js"></script>
+        <div id="viewHome">
+            <div class="bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-lg rounded-3xl p-5 mb-6">
+                <h3 class="font-bold mb-4 flex items-center gap-2"><i class="bi bi-plus-circle"></i> Внеси млеко</h3>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Мерач (mm)</label>
+                        <input type="number" id="meracMm" class="w-full px-4 py-2 rounded-xl bg-white/50 dark:bg-black/30 border border-white/50 dark:border-white/20 outline-none focus:ring-2 focus:ring-blue-400" oninput="presmetajOdMm()">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Литри (L)</label>
+                        <input type="number" id="litri" class="w-full px-4 py-2 rounded-xl bg-white/50 dark:bg-black/30 border border-white/50 dark:border-white/20 outline-none focus:ring-2 focus:ring-blue-400">
+                    </div>
+                </div>
+                <button class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow transition" onclick="zacuvajMleko()">Зачувај</button>
+            </div>
+
+            <div class="bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-lg rounded-3xl overflow-hidden">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-white/30 dark:bg-black/30">
+                    <h3 class="font-bold">Последни записи</h3>
+                    <span class="px-3 py-1 bg-blue-500 text-white text-sm rounded-full font-bold">Овој месец: <span id="vkupnoOvojMesec">0</span> L</span>
+                </div>
+                <div class="overflow-y-auto" style="max-height: 400px;">
+                    <table class="w-full text-left text-sm">
+                        <thead class="sticky top-0 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm text-gray-500 text-xs uppercase">
+                            <tr><th class="p-3">Датум</th><th class="p-3">Литри</th><th class="p-3">Корисник</th><th class="p-3 text-right hidden" id="thEdit">Бриши</th></tr>
+                        </thead>
+                        <tbody id="tabelaZapisi" class="divide-y divide-gray-200/50 dark:divide-gray-700/50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="viewKravi" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Мое Стадо</h2>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-bold shadow flex items-center gap-1" onclick="otvoriNovaKravaModal()"><i class="bi bi-plus-lg"></i> Ново грло</button>
+            </div>
+            
+            <input type="text" id="prebarajKravi" class="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-black/30 border border-white/50 dark:border-white/20 outline-none focus:ring-2 focus:ring-blue-400 mb-4" placeholder="Пребарај по ушен број..." oninput="filtrirajKravi()">
+            
+            <div class="flex gap-2 overflow-x-auto pb-2 mb-4 custom-scrollbar">
+                <button class="filter-btn bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-bold border border-transparent whitespace-nowrap transition" onclick="postaviFilterKravi(this, 'Сите')">Сите</button>
+                <button class="filter-btn bg-transparent border border-gray-400 dark:border-gray-600 px-4 py-1 rounded-full text-sm whitespace-nowrap transition hover:bg-white/20" onclick="postaviFilterKravi(this, 'Стелни')">Стелни</button>
+                <button class="filter-btn bg-transparent border border-gray-400 dark:border-gray-600 px-4 py-1 rounded-full text-sm whitespace-nowrap transition hover:bg-white/20" onclick="postaviFilterKravi(this, 'Отворена')">Отворени</button>
+            </div>
+
+            <div class="bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-lg rounded-3xl overflow-hidden">
+                <div class="overflow-x-auto" style="max-height: 60vh;">
+                    <table class="w-full text-left text-sm">
+                        <thead class="sticky top-0 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm text-gray-500 text-xs uppercase">
+                            <tr><th class="p-3">Грло</th><th class="p-3 text-center">Статус</th><th class="p-3 text-center">Осеменета</th><th class="p-3 text-right">Акции</th></tr>
+                        </thead>
+                        <tbody id="tabelaKravi" class="divide-y divide-gray-200/50 dark:divide-gray-700/50"></tbody>
+                    </table>
+                </div>
+                <div class="bg-white/30 dark:bg-black/30 p-2 text-center text-xs text-gray-500" id="vkupnoKraviBroj">Прикажани: 0</div>
+            </div>
+        </div>
+
+        <div id="viewReports" class="hidden">
+            <div class="bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-lg rounded-3xl p-5 mb-6">
+                <h3 class="font-bold mb-4 flex items-center gap-2"><i class="bi bi-file-earmark-bar-graph"></i> Месечен Извештај</h3>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <select id="mesecSelect" class="w-full px-3 py-2 rounded-xl bg-white/50 dark:bg-black/30 border border-white/50 dark:border-white/20 outline-none"></select>
+                    <select id="godinaSelect" class="w-full px-3 py-2 rounded-xl bg-white/50 dark:bg-black/30 border border-white/50 dark:border-white/20 outline-none"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <input type="number" id="cenaMleko" class="w-full px-3 py-2 rounded-xl bg-white/50 dark:bg-black/30 border border-white/50 dark:border-white/20 outline-none" placeholder="Цена (ден)">
+                    <input type="number" id="danokMleko" class="w-full px-3 py-2 rounded-xl bg-white/50 dark:bg-black/30 border border-white/50 dark:border-white/20 outline-none" placeholder="Данок (%)" value="0">
+                </div>
+                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow transition" onclick="izvestaj()">Пресметај</button>
+            </div>
+
+            <div id="resIzv" class="bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-lg rounded-3xl p-5 mb-6 hidden">
+                <div class="flex justify-between mb-2"><span>Вкупно литри:</span><b id="vkLitri"></b></div>
+                <div class="flex justify-between mb-2"><span>Бруто:</span><b id="vkBruto"></b></div>
+                <div class="flex justify-between mb-2 text-sm text-gray-500"><span>Основа за данок:</span><span id="vkOsnova"></span></div>
+                <div class="flex justify-between mb-3 text-red-500"><span>Данок:</span><b id="vkDanok"></b></div>
+                <hr class="border-gray-300 dark:border-gray-600 my-3">
+                <div class="flex justify-between text-xl text-green-600 dark:text-green-400 font-bold"><span>За исплата:</span><b id="vkNeto"></b></div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button class="flex-1 bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900/40 dark:text-green-300 dark:hover:bg-green-800/60 font-bold py-2 rounded-xl flex items-center justify-center gap-2 transition" onclick="generirajExcel()"><i class="bi bi-filetype-csv"></i> CSV</button>
+                    <button class="flex-1 bg-red-100 hover:bg-red-200 text-red-800 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-800/60 font-bold py-2 rounded-xl flex items-center justify-center gap-2 transition" onclick="generirajPDF()"><i class="bi bi-filetype-pdf"></i> PDF</button>
+                </div>
+            </div>
+
+            <div class="bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-lg rounded-3xl p-4">
+                <canvas id="myChart" height="200"></canvas>
+            </div>
+        </div>
+
+        <div id="viewAdmin" class="hidden">
+            <div class="bg-red-100/50 dark:bg-red-900/20 backdrop-blur-md border border-red-200 dark:border-red-900 shadow-lg rounded-3xl p-5 mb-6">
+                <h3 class="font-bold text-red-600 dark:text-red-400 mb-4 flex items-center gap-2"><i class="bi bi-person-plus-fill"></i> Додај нов корисник</h3>
+                <input type="email" id="novKorisnikEmail" class="w-full px-4 py-2 mb-3 rounded-xl bg-white/60 dark:bg-black/40 border border-red-200 dark:border-red-800 outline-none" placeholder="Е-маил адреса">
+                <input type="password" id="novKorisnikPass" class="w-full px-4 py-2 mb-3 rounded-xl bg-white/60 dark:bg-black/40 border border-red-200 dark:border-red-800 outline-none" placeholder="Привремена лозинка">
+                <select id="novKorisnikUloga" class="w-full px-4 py-2 mb-4 rounded-xl bg-white/60 dark:bg-black/40 border border-red-200 dark:border-red-800 outline-none">
+                    <option value="user">Обичен Корисник</option>
+                    <option value="admin">Администратор</option>
+                </select>
+                <button class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow transition" onclick="dodajNovKorisnik()">Креирај корисник</button>
+            </div>
+
+            <h3 class="font-bold text-lg mb-3">Управување со корисници</h3>
+            <div class="bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-lg rounded-3xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-white/50 dark:bg-gray-800/50 text-gray-500 text-xs uppercase">
+                            <tr><th class="p-3">Корисник</th><th class="p-3 text-center">Улога</th><th class="p-3 text-center">Активност</th><th class="p-3 text-right">Акции</th></tr>
+                        </thead>
+                        <tbody id="tabelaKorisnici" class="divide-y divide-gray-200/50 dark:divide-gray-700/50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="fixed bottom-0 w-full z-30 bg-white/60 dark:bg-black/60 backdrop-blur-xl border-t border-white/40 dark:border-white/10 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] pb-safe" id="bottomNav">
+        <div class="flex justify-around items-center p-2">
+            <button id="btnHome" class="flex flex-col items-center justify-center p-2 w-16 h-14 rounded-2xl transition active-nav text-blue-600 bg-blue-500/10" onclick="switchView('home')">
+                <i class="bi bi-droplet text-xl"></i><span class="text-[10px] mt-1 font-medium">Млеко</span>
+            </button>
+            <button id="btnKravi" class="flex flex-col items-center justify-center p-2 w-16 h-14 rounded-2xl transition text-gray-500 hover:text-blue-500 relative" onclick="switchView('kravi')">
+                <i class="bi bi-moisture text-xl"></i><span class="text-[10px] mt-1 font-medium">Стадо</span>
+                <span id="stadoBadge" class="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] text-white font-bold hidden">0</span>
+            </button>
+            <button id="btnReports" class="flex flex-col items-center justify-center p-2 w-16 h-14 rounded-2xl transition text-gray-500 hover:text-blue-500" onclick="switchView('reports')">
+                <i class="bi bi-graph-up text-xl"></i><span class="text-[10px] mt-1 font-medium">Извештаи</span>
+            </button>
+            <button id="btnAdmin" class="flex flex-col items-center justify-center p-2 w-16 h-14 rounded-2xl transition text-red-400 hover:text-red-500 hidden" onclick="switchView('admin')">
+                <i class="bi bi-people text-xl"></i><span class="text-[10px] mt-1 font-medium">Админ</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="toastNotification" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl text-sm font-medium transition-all duration-300 opacity-0 translate-y-4 pointer-events-none"></div>
+    
+    <div id="customAlert" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+        <div class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl p-6 rounded-3xl text-center w-11/12 max-w-sm shadow-2xl border border-white/20">
+            <i class="bi bi-exclamation-circle text-yellow-500 text-5xl mb-3 inline-block"></i>
+            <p id="alertText" class="text-lg font-bold mb-6"></p>
+            <button class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl" onclick="closeAlert()">Во ред</button>
+        </div>
+    </div>
+
+    <div id="customConfirm" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+        <div class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl p-6 rounded-3xl text-center w-11/12 max-w-sm shadow-2xl border border-white/20">
+            <i class="bi bi-question-circle text-blue-500 text-5xl mb-3 inline-block"></i>
+            <p id="confirmText" class="text-lg font-bold mb-6"></p>
+            <div class="flex gap-3">
+                <button class="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white font-bold py-3 rounded-xl" onclick="closeConfirm(false)">Откажи</button>
+                <button class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl" onclick="closeConfirm(true)">Потврди</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalKrava" class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm hidden transition-opacity">
+        <div class="bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-t-3xl w-full max-w-md shadow-2xl border-t border-white/20 max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 id="kravaFormTitle" class="text-lg font-bold">Ново Грло</h3>
+                <button onclick="zatvoriModalKrava()" class="text-gray-500 hover:text-gray-800 dark:hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-5 overflow-y-auto pb-8">
+                <input type="text" id="kravaUshen" class="w-full px-4 py-3 mb-3 rounded-xl bg-gray-100/50 dark:bg-black/50 border border-gray-300 dark:border-gray-700 outline-none focus:border-blue-500" placeholder="Ушен број (МК...) *">
+                <input type="text" id="kravaIme" class="w-full px-4 py-3 mb-3 rounded-xl bg-gray-100/50 dark:bg-black/50 border border-gray-300 dark:border-gray-700 outline-none focus:border-blue-500" placeholder="Име (опционално)">
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <select id="kravaPol" class="w-full px-4 py-3 rounded-xl bg-gray-100/50 dark:bg-black/50 border border-gray-300 dark:border-gray-700 outline-none" onchange="osveziKravaUI()">
+                        <option value="Женско">Женско</option><option value="Машко">Машко</option>
+                    </select>
+                    <input type="date" id="kravaRagjanje" class="w-full px-4 py-3 rounded-xl bg-gray-100/50 dark:bg-black/50 border border-gray-300 dark:border-gray-700 outline-none">
+                </div>
+                <select id="kravaMajka" class="w-full px-4 py-3 mb-4 rounded-xl bg-gray-100/50 dark:bg-black/50 border border-gray-300 dark:border-gray-700 outline-none">
+                    <option value="">Непозната / Купена</option>
+                </select>
+                
+                <div id="reprodukcijaBlok" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 mb-6">
+                    <label class="block text-sm font-bold text-blue-600 dark:text-blue-400 mb-2">Репродукција</label>
+                    <input type="date" id="kravaOsemenuvanje" class="w-full px-4 py-3 mb-2 rounded-xl bg-white/80 dark:bg-black/50 border border-blue-200 dark:border-blue-700 outline-none" title="Датум на осеменување">
+                    <input type="number" id="kravaBrojOsemen" class="w-full px-4 py-3 rounded-xl bg-white/80 dark:bg-black/50 border border-blue-200 dark:border-blue-700 outline-none" placeholder="Број на осеменувања">
+                </div>
+                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg" onclick="zacuvajKravaJS()">Зачувај</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalTelenje" class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm hidden">
+        <div class="bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl rounded-t-3xl w-full max-w-md shadow-2xl border-t border-white/20 pb-8">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-green-600 flex items-center gap-2"><i class="bi bi-stars"></i> Регистрација на телење</h3>
+                <button onclick="zatvoriTelenje()" class="text-gray-500 hover:text-gray-800 dark:hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-5">
+                <p class="text-sm text-gray-500 mb-4">Мајка: <b id="telenjeMajkaUshen" class="text-gray-900 dark:text-white"></b></p>
+                <input type="hidden" id="telenjeMajkaId">
+                <label class="block text-sm mb-1">Датум на телење</label>
+                <input type="date" id="telenjeDatum" class="w-full px-4 py-3 mb-4 rounded-xl bg-gray-100/50 dark:bg-black/50 border border-gray-300 dark:border-gray-700 outline-none">
+                
+                <label class="block text-sm mb-1 mt-2 font-bold text-blue-500">Податоци за телето</label>
+                <input type="text" id="telenjeTeleUshen" class="w-full px-4 py-3 mb-2 rounded-xl bg-gray-100/50 dark:bg-black/50 border border-gray-300 dark:border-gray-700 outline-none" placeholder="Ушен број на телето *">
+                <select id="telenjeTelePol" class="w-full px-4 py-3 mb-6 rounded-xl bg-gray-100/50 dark:bg-black/50 border border-gray-300 dark:border-gray-700 outline-none">
+                    <option value="Женско">Женско</option><option value="Машко">Машко</option>
+                </select>
+                <button class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg" onclick="potvrdiTelenje()">Потврди Телење</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
 </body>
 </html>
