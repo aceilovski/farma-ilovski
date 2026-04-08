@@ -1,10 +1,21 @@
-/* Поправање на Safe Area за долната навигација */
-.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+/* Поправање на Safe Area за долната навигација (за iPhone/Android екрани) */
+.pb-safe { 
+    padding-bottom: env(safe-area-inset-bottom); 
+}
 
-/* Хоризонтален скролбар */
-.custom-scrollbar::-webkit-scrollbar { height: 4px; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 10px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+/* Хоризонтален скролбар (за делот кај кравите каде има филтри) */
+.custom-scrollbar::-webkit-scrollbar { 
+    height: 4px; 
+}
+.custom-scrollbar::-webkit-scrollbar-thumb { 
+    background: rgba(156, 163, 175, 0.5); 
+    border-radius: 10px; 
+}
+.custom-scrollbar::-webkit-scrollbar-track { 
+    background: transparent; 
+}
 
-/* МАГИЧНАТА ЛИНИЈА: Гарантира дека секогаш ќе ги крие елементите */
-.hidden { display: none !important; }
+/* Ова е резервна сигурност за да сме 100% сигурни дека сокриените елементи остануваат сокриени */
+.hidden { 
+    display: none !important; 
+}

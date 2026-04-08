@@ -22,11 +22,17 @@ let currentUserEmail = ""; let currentRole = "user"; let myChart; let selectedCo
 // ==========================================
 function showLoader(t = "Вчитување...") { 
     document.getElementById('loaderText').innerText = t; 
-    document.getElementById('globalLoader').style.display = 'flex'; 
+    let loader = document.getElementById('globalLoader');
+    loader.classList.remove('hidden'); 
+    loader.classList.add('flex'); 
 }
+
 function hideLoader() { 
-    document.getElementById('globalLoader').style.display = 'none'; 
+    let loader = document.getElementById('globalLoader');
+    loader.classList.remove('flex'); 
+    loader.classList.add('hidden'); 
 }
+
 function showToast(t) { 
   let b = document.getElementById('toastNotification'); b.innerText = t; 
   b.classList.remove('opacity-0', 'translate-y-4'); b.classList.add('opacity-100', 'translate-y-0');
