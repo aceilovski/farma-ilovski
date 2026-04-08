@@ -72,22 +72,29 @@ auth.onAuthStateChanged((user) => {
     currentUserEmail = user.email; 
     document.getElementById('displayUser').innerText = currentUserEmail.split('@')[0];
     
-    // 1. Ажурирај го времето (за онлајн статус)
     db.collection("users").doc(user.uid).set({
         lastActive: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true }).catch(err => console.log("Следење на активност: ", err.message));
+    }, { merge: true }).catch(e => console.log(e));
 
-    // 2. Вчитај ја улогата
+    // ПРОЗОРЕЦ 1
+    alert("ЧЕКОР 1: Најавен си со мејл " + user.email + "\nТвојот UID e: " + user.uid);
+
     db.collection("users").doc(user.uid).get()
       .then(doc => {
-        if(doc.exists && doc.data().role) {
+        if(doc.exists) {
+            // ПРОЗОРЕЦ 2
+            alert("ЧЕКОР 2: Документот е НАЈДЕН!\nПрочитана улога: " + doc.data().role);
             currentRole = doc.data().role; 
         } else {
+            // ПРОЗОРЕЦ 3
+            alert("ГРЕШКА: Firebase вели дека нема документ со име:\n" + user.uid);
             currentRole = "user";
         }
         applyUserRoleUI();
       })
       .catch(err => { 
+          // ПРОЗОРЕЦ 4
+          alert("БЛОКАДА ОД БАЗАТА:\n" + err.message);
           currentRole = "user"; 
           applyUserRoleUI(); 
       });
@@ -97,7 +104,6 @@ auth.onAuthStateChanged((user) => {
     document.getElementById('mainSection').classList.add('hidden');
   }
 });
-
 function applyUserRoleUI() {
     let rb = document.getElementById('displayRole');
     if (currentRole === 'superadmin') { 
